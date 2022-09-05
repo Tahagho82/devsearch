@@ -1,10 +1,12 @@
+from multiprocessing import context
+from urllib import request
 from django.shortcuts import render, redirect
 from .models import Profile
 from django.contrib.auth import login, authenticate,logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm,ProfileForm
 
 def loginUser(request):
     page = 'login'
@@ -49,7 +51,7 @@ def registerUser(request):
 
             messages.success(request,'USer account was created!')
             login(request,user)
-            return redirect('profiles')
+            return redirect('edit-account')
         else:
             messages.error(request,'An error has occured during registeration')
 
@@ -62,7 +64,6 @@ def profiles(request):
     context = {'profiles': profiles}
     return render(request, 'users/profiles.html', context)
 
-
 def userProfile(request, pk):
     profile = Profile.objects.get(id=pk)
 
@@ -71,3 +72,25 @@ def userProfile(request, pk):
     context = {'profile': profile, 'topSkills': topSkills,
                'otherSkills': otherSkills}
     return render(request, 'users/user-profile.html', context)
+
+@login_required(login_url='login')
+def userAccount(request):
+    profile = request.user.profile
+
+    context = {'profile':profile}
+    return render(request,'users/account.html',context )
+
+@login_required(login_url='login')
+def editAccount(request):
+    profile = request.user.profile
+    form = ProfileForm(instance=profile)
+    if request.method=="POST":
+        form = ProfileForm(request.POST,request.FILES,instance=profile)
+        if form.is_valid():
+            form.save()
+
+            return redirect('account')
+
+    context = {'form': form}
+
+    return render(request,'users/profile_form.html',context)
