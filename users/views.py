@@ -1,5 +1,3 @@
-from multiprocessing import context
-from urllib import request
 from django.shortcuts import render, redirect
 from .models import Profile
 from django.contrib.auth import login, authenticate, logout
@@ -7,7 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, ProfileForm, SkillForm
-
+from .utils import searchProfiles,paginatProfiles
 
 def loginUser(request):
     page = 'login'
@@ -61,11 +59,15 @@ def registerUser(request):
 
     context = {'page': page, 'form': form}
     return render(request, 'users/login_register.html', context)
-
+ 
 
 def profiles(request):
-    profiles = Profile.objects.all()
-    context = {'profiles': profiles}
+    profiles , search_query = searchProfiles(request)
+    
+    custom_range,profiles = paginatProfiles(request,profiles,results=3)
+    
+    context = {'profiles': profiles, 'search_query': search_query,
+    'custom_range':custom_range}
     return render(request, 'users/profiles.html', context)
 
 
@@ -112,8 +114,8 @@ def createSkill(request):
             skill = form.save(commit=False)
             skill.owner = request.user.profile
             skill.save()
-            
-            messages.success(request,'Skill was added successfully')
+
+            messages.success(request, 'Skill was added successfully')
 
             return redirect('account')
     context = {'form': form}
@@ -127,13 +129,14 @@ def updateSkill(request, pk):
     form = SkillForm(instance=skill)
 
     if request.method == 'POST':
-        form = SkillForm(request.POST,instance=skill)
+        form = SkillForm(request.POST, instance=skill)
         if form.is_valid():
             form.save()
-            messages.success(request,'Skill was updated successfully')
+            messages.success(request, 'Skill was updated successfully')
             return redirect('account')
     context = {'form': form}
     return render(request, 'users/skill_form.html', context)
+
 
 @login_required(login_url='login')
 def deleteSkill(request, pk):
@@ -141,8 +144,8 @@ def deleteSkill(request, pk):
     skill = profile.skill_set.get(id=pk)
     if request.method == 'POST':
         skill.delete()
-        messages.success(request,'Skill was deleted successfully')
+        messages.success(request, 'Skill was deleted successfully')
         return redirect('account')
 
     context = {'object': skill}
-    return render(request,'delete_template.html',context)
+    return render(request, 'delete_template.html', context)
