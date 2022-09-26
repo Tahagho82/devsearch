@@ -22,21 +22,51 @@ class Project(models.Model):
 
     def __str__(self):
         return self.title
+
     class Meta:
-        ordering = ['created']
+        # میگه که اول بر اساس مثبت بودن رای بعد برا اساس تعداد رای ها
+        ordering = ['-vote_ratio','-vote_total','title']
+
+    @property
+    def reviewers(self):
+        #  ایدی تمام نظر دهنده ها رو به صورت لیست بده(flat)
+        queryset = self.review_set.all().values_list('owner__id',flat=True)
+        return queryset
+
+    @property
+    def getVoteCount(self):
+        reviews = self.review_set.all()
+        upVote = reviews.filter(value='up').count()
+        # تعداد کوئری هایی که دارم را میگویید
+        totalVotes = reviews.count()
+
+        ratio = (upVote/totalVotes)*100
+
+
+        self.vote_total = totalVotes
+        self.vote_ratio = ratio
+        
+        self.save()
+
 
 class Review(models.Model):
     VOTE_TYPE = (
         ('up', 'Up Vote'),
         ('down', 'Down Vote'),
     )
-    # owner =
+    owner = models.ForeignKey(
+        Profile, on_delete=models.CASCADE, null=True
+    )
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     body = models.TextField(null=False, blank=True)
     value = models.CharField(max_length=200, choices=VOTE_TYPE)
     created = models.DateTimeField(auto_now_add=True)
     id = models.UUIDField(default=uuid.uuid4, unique=True,
                           primary_key=True, editable=False)
+
+    class Meta:
+        # باعث میشه که هیچ نظری مالک و پروژه مشابهی نداشته باشد
+        unique_together = [['owner', 'project']]
 
     def __str__(self):
         return self.value

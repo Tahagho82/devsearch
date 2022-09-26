@@ -1,3 +1,5 @@
+from cgitb import text
+from turtle import ondrag
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
@@ -39,3 +41,25 @@ class Skill(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+class Message(models.Model):
+    # set_null باعث میشه وقتی کاربر حذف شد پیام باقی بماند
+    sender= models.ForeignKey(Profile,on_delete=models.SET_NULL,null=True,blank=True)
+    #  لازم نیستی بنویسیم profile.Message_set فقط مینویسیم  messegaes
+    recipient = models.ForeignKey(Profile,on_delete=models.SET_NULL,null=True,blank=True,related_name='messages')
+    name = models.CharField(max_length=200,null=True,blank=True)
+    email = models.EmailField(max_length=200,null=True,blank=True)
+    subject = models.CharField(max_length=200,null=True,blank=True)
+    # چون نمیخوایم پیام اصلی خالی باشه محدودیتی نمیزاریم
+    body = models.TextField()
+    is_read = models.BooleanField(default=False,null=True)
+    
+    created = models.DateTimeField(auto_now_add=True)
+    id = models.UUIDField(default=uuid.uuid4, unique=True,
+                          primary_key=True, editable=False)
+
+    def __str__(self):
+        return self.subject
+    
+    class Meta:
+        ordering = ['is_read','-created']
