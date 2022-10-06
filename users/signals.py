@@ -21,7 +21,6 @@ def createProfile(sender, instance, created, **kwargs):
 
         subject = 'Welcome to devsarch'
         message = 'We are glad you are here!'
-# به خاطر محدودیت های گوگل نمیشه استفاده کرد
         send_mail(
             subject,
             message,
